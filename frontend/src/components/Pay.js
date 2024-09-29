@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { pay } from '../services/api';
+import { pay, getPaymentDetails } from '../services/api';
 import { toast } from 'react-toastify';
 
 const Pay = () => {
@@ -8,7 +8,7 @@ const Pay = () => {
 
   const handleFetchPayment = async () => {
     try {
-      const res = await pay({ paymentCode });
+      const res = await getPaymentDetails(paymentCode);
       setPaymentDetails(res.data);
       toast.success('Payment details fetched');
     } catch (error) {
@@ -17,9 +17,20 @@ const Pay = () => {
   };
 
   const handlePayment = async () => {
-    // Razorpay Payment integration would go here
-    // For now, assuming it's successful
-    toast.success('Payment Completed!');
+    try {
+      const userData = JSON.parse(localStorage.getItem('user'));
+      console.log('User data:', userData); // Add this line
+      await pay({ 
+        paymentCode, 
+        name: userData.name, 
+        rollNumber: userData.rollNumber 
+      });
+      toast.success('Payment Completed!');
+      handleFetchPayment();
+    } catch (error) {
+      console.error('Payment error:', error.response?.data); // Add this line
+      toast.error('Payment failed: ' + error.response?.data?.error);
+    }
   };
 
   return (
@@ -38,6 +49,8 @@ const Pay = () => {
         <div>
           <h3>Paying for {paymentDetails.name}</h3>
           <p>Amount: ₹{paymentDetails.amount}</p>
+          <p>UPI ID: {paymentDetails.upiId}</p>
+          <p>Payments Received: {paymentDetails.paidUsers.length}</p>
           <button onClick={handlePayment}>Pay</button>
         </div>
       )}

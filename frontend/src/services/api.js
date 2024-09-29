@@ -9,5 +9,5 @@ export const login = (userData) => API.post('/users/login', userData);
 export const createPayment = (paymentData) => API.post('/payments/create', paymentData);
 export const pay = (paymentData) => API.post('/payments/pay', paymentData);
 export const verifyPayment = (paymentData) => API.post('/payments/verify', paymentData);
-export const getPaymentDetails = (code) => API.get(`/payments/${code}`);
 export const myPayments = () => API.get('/payments/mypayments');
+export const getPaymentDetails = (code) => API.get(`/payments/details/${code}`);

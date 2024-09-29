@@ -1,5 +1,6 @@
 const express = require('express');
 const Payment = require('../models/Payment');
+const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
 const router = express.Router();
 
@@ -16,50 +17,56 @@ router.post('/create', async (req, res) => {
   }
 });
 
-// Pay Using Code
+// Pay Using Code (Dummy Payment)
 router.post('/pay', async (req, res) => {
-  const { paymentCode, name, rollNumber, amount } = req.body;
+  const { paymentCode, name, rollNumber } = req.body;
   try {
+    console.log('Received payment request:', { paymentCode, name, rollNumber });
+
     const payment = await Payment.findOne({ paymentCode });
     if (!payment) return res.status(404).json({ error: 'Payment not found' });
 
-    const razorpayInstance = new Razorpay({
-      key_id: 'YOUR_RAZORPAY_KEY_ID',
-      key_secret: 'YOUR_RAZORPAY_KEY_SECRET',
+    console.log('Payment found:', payment);
+
+    const user = await User.findOne({ rollNumber });
+    console.log('User search result:', user);
+
+    if (!user) return res.status(404).json({ error: `User not found with roll number: ${rollNumber}` });
+
+    // Check if user has already paid
+    const existingPayment = payment.paidUsers.find(p => p.rollNumber === rollNumber);
+    if (existingPayment) return res.status(400).json({ error: 'You have already paid for this payment' });
+
+    // Add user to paidUsers
+    payment.paidUsers.push({
+      name: user.name,
+      rollNumber: user.rollNumber,
+      amount: payment.amount,
+      status: 'completed',
+      time: Date.now()
     });
 
-    const options = {
-      amount: amount * 100, // Razorpay accepts amount in paise
-      currency: 'INR',
-      receipt: `receipt_${paymentCode}`,
-    };
+    // Add payment to user's paymentsMade
+    user.paymentsMade.push(payment._id);
 
-    const order = await razorpayInstance.orders.create(options);
+    await payment.save();
+    await user.save();
 
-    res.json({ orderId: order.id });
+    res.json({ message: 'Payment successful' });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Server error: ' + error.message });
   }
 });
 
-// Verify Payment
-router.post('/verify', async (req, res) => {
-  const { orderId, paymentId, signature, paymentCode, name, rollNumber } = req.body;
-
-  const hmac = crypto.createHmac('sha256', 'YOUR_RAZORPAY_KEY_SECRET');
-  hmac.update(orderId + '|' + paymentId);
-  const generatedSignature = hmac.digest('hex');
-
-  if (generatedSignature === signature) {
-    const payment = await Payment.findOne({ paymentCode });
+// Get Payment Details
+router.get('/details/:paymentCode', async (req, res) => {
+  try {
+    const payment = await Payment.findOne({ paymentCode: req.params.paymentCode });
     if (!payment) return res.status(404).json({ error: 'Payment not found' });
-
-    payment.paidUsers.push({ name, rollNumber, amount: payment.amount, status: 'completed' });
-    await payment.save();
-
-    res.json({ message: 'Payment verified and completed' });
-  } else {
-    res.status(400).json({ error: 'Invalid signature' });
+    res.json(payment);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 

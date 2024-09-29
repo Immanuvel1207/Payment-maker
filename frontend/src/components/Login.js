@@ -13,9 +13,14 @@ const Login = () => {
     try {
       const res = await login({ rollNumber, password });
       localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify({
+        name: res.data.name,
+        rollNumber: res.data.rollNumber
+      }));
       toast.success(`Welcome ${res.data.name}`);
       navigate('/home');
     } catch (error) {
+      console.error('Login error:', error.response?.data);
       toast.error('Invalid credentials');
     }
   };
