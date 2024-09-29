@@ -5,6 +5,7 @@ import Register from './components/Register';
 import Home from './components/Home';
 import CreatePayment from './components/CreatePayment';
 import Pay from './components/Pay';
+import MyPayments from './components/MyPayments';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -20,6 +21,7 @@ function App() {
           <Route path="/home" element={<Home />} />
           <Route path="/create-payment" element={<CreatePayment />} />
           <Route path="/pay" element={<Pay />} />
+          <Route path="/my-payments" element={<MyPayments />} />
         </Routes>
       </div>
     </Router>
