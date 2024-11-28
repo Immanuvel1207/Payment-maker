@@ -6,6 +6,7 @@ import Home from './components/Home';
 import CreatePayment from './components/CreatePayment';
 import Pay from './components/Pay';
 import MyPayments from './components/MyPayments';
+import PaymentDetails from './components/PaymentDetails';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -22,6 +23,7 @@ function App() {
           <Route path="/create-payment" element={<CreatePayment />} />
           <Route path="/pay" element={<Pay />} />
           <Route path="/my-payments" element={<MyPayments />} />
+          <Route path="/payment-details/:paymentCode" element={<PaymentDetails />} />
         </Routes>
       </div>
     </Router>
@@ -29,3 +31,4 @@ function App() {
 }
 
 export default App;
+

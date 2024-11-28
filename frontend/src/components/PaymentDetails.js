@@ -1,67 +1,100 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import jsPDF from 'jspdf';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { getPaymentDetails } from '../services/api';
+import { toast } from 'react-toastify';
 
-const PaymentDetails = ({ token }) => {
-    const [code, setCode] = useState('');
-    const [paymentDetails, setPaymentDetails] = useState(null);
+const containerStyle = {
+  maxWidth: '800px',
+  margin: '0 auto',
+  padding: '20px',
+};
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const res = await axios.get(`http://localhost:5000/api/payments/details/${code}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setPaymentDetails(res.data);
-        } catch (err) {
-            alert('Error fetching payment details');
-        }
-    };
+const tableStyle = {
+  width: '100%',
+  borderCollapse: 'collapse',
+  marginTop: '20px',
+};
 
-    const downloadPDF = () => {
-        const doc = new jsPDF();
-        doc.text('Payment Details', 10, 10);
-        doc.text(`Amount: ${paymentDetails.amount}`, 10, 20);
-        doc.text(`Status: ${paymentDetails.status}`, 10, 30);
-        doc.text(`Received Payments: ${paymentDetails.paidUsers.length}`, 10, 40);
-        paymentDetails.paidUsers.forEach((user, index) => {
-            doc.text(`${index + 1}. ${user.name} (Roll No: ${user.rollno}) - Paid on: ${new Date(user.paymentTime).toLocaleString()}`, 10, 50 + index * 10);
-        });
-        doc.save('payment-details.pdf');
-    };
+const thTdStyle = {
+  border: '1px solid #ddd',
+  padding: '8px',
+  textAlign: 'left',
+};
 
-    return (
-        <div className="container">
-            <h2>Enter Payment Code</h2>
-            <form onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    placeholder="Enter Payment Code"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    required
-                />
-                <button type="submit">Get Details</button>
-            </form>
+const buttonStyle = {
+  backgroundColor: '#4CAF50',
+  border: 'none',
+  color: 'white',
+  padding: '10px 20px',
+  textAlign: 'center',
+  textDecoration: 'none',
+  display: 'inline-block',
+  fontSize: '16px',
+  margin: '4px 2px',
+  cursor: 'pointer',
+  borderRadius: '4px',
+};
 
-            {paymentDetails && (
-                <div className="payment-details">
-                    <h3>Payment Details</h3>
-                    <p>Amount: {paymentDetails.amount}</p>
-                    <p>Status: {paymentDetails.status}</p>
-                    <p>Received: {paymentDetails.paidUsers.length} Payments</p>
-                    <ul>
-                        {paymentDetails.paidUsers.map((user, index) => (
-                            <li key={index}>
-                                {user.name} (Roll No: {user.rollno}) - Paid on: {new Date(user.paymentTime).toLocaleString()}
-                            </li>
-                        ))}
-                    </ul>
-                    <button onClick={downloadPDF}>Download PDF</button>
-                </div>
-            )}
-        </div>
-    );
+const PaymentDetails = () => {
+  const [payment, setPayment] = useState(null);
+  const [error, setError] = useState(null);
+  const { paymentCode } = useParams();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchPaymentDetails();
+  }, [paymentCode]);
+
+  const fetchPaymentDetails = async () => {
+    try {
+      const res = await getPaymentDetails(paymentCode);
+      setPayment(res.data);
+    } catch (error) {
+      console.error('Error fetching payment details:', error.response?.data || error.message);
+      setError(error.response?.data?.error || 'An unexpected error occurred');
+      toast.error('Error fetching payment details');
+    }
+  };
+
+  if (error) {
+    return <div style={containerStyle}><p style={{ color: 'red', textAlign: 'center' }}>{error}</p></div>;
+  }
+
+  if (!payment) {
+    return <div style={containerStyle}><p>Loading...</p></div>;
+  }
+
+  return (
+    <div style={containerStyle}>
+      <button style={buttonStyle} onClick={() => navigate('/my-payments')}>Back to My Payments</button>
+      <h2>{payment.name} - Payment Details</h2>
+      <p><strong>Amount:</strong> ₹{payment.amount}</p>
+      <p><strong>Payment Code:</strong> {payment.paymentCode}</p>
+      <p><strong>Total Payments Received:</strong> {payment.paidUsers.length}</p>
+      <h3>Paid Users</h3>
+      <table style={tableStyle}>
+        <thead>
+          <tr>
+            <th style={thTdStyle}>Name</th>
+            <th style={thTdStyle}>Roll Number</th>
+            <th style={thTdStyle}>Amount</th>
+            <th style={thTdStyle}>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {payment.paidUsers.map((user, index) => (
+            <tr key={index}>
+              <td style={thTdStyle}>{user.name}</td>
+              <td style={thTdStyle}>{user.rollNumber}</td>
+              <td style={thTdStyle}>₹{user.amount}</td>
+              <td style={thTdStyle}>{new Date(user.time).toLocaleString()}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 };
 
 export default PaymentDetails;
+

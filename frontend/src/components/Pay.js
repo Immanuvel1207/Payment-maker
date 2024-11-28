@@ -19,7 +19,6 @@ const Pay = () => {
   const handlePayment = async () => {
     try {
       const userData = JSON.parse(localStorage.getItem('user'));
-      console.log('User data:', userData); // Add this line
       await pay({ 
         paymentCode, 
         name: userData.name, 
@@ -28,7 +27,7 @@ const Pay = () => {
       toast.success('Payment Completed!');
       handleFetchPayment();
     } catch (error) {
-      console.error('Payment error:', error.response?.data); // Add this line
+      console.error('Payment error:', error.response?.data);
       toast.error('Payment failed: ' + error.response?.data?.error);
     }
   };
@@ -59,3 +58,4 @@ const Pay = () => {
 };
 
 export default Pay;
+
