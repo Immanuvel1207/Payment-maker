@@ -7,7 +7,7 @@ const MyPayments = () => {
   const [payments, setPayments] = useState([]);
   const [createdPayments, setCreatedPayments] = useState([]);
   const [error, setError] = useState(null);
-  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,8 +21,10 @@ const MyPayments = () => {
       setPayments(res.data);
     } catch (error) {
       console.error('Error fetching payments:', error.response?.data || error.message);
-      setError(error.response?.data?.error || 'An unexpected error occurred');
+      setError('Error fetching payments. Please try again later.');
       toast.error('Error fetching payments');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -32,7 +34,10 @@ const MyPayments = () => {
       setCreatedPayments(res.data);
     } catch (error) {
       console.error('Error fetching created payments:', error.response?.data || error.message);
+      setError('Error fetching created payments. Please try again later.');
       toast.error('Error fetching created payments');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -71,84 +76,59 @@ const MyPayments = () => {
     borderRadius: '4px',
   };
 
-  const modalStyle = {
-    position: 'fixed',
-    zIndex: 1,
-    left: 0,
-    top: 0,
-    width: '100%',
-    height: '100%',
-    overflow: 'auto',
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  };
+  if (loading) {
+    return <div style={containerStyle}><p>Loading...</p></div>;
+  }
 
-  const modalContentStyle = {
-    backgroundColor: '#fefefe',
-    margin: '15% auto',
-    padding: '20px',
-    border: '1px solid #888',
-    width: '80%',
-    maxWidth: '500px',
-  };
-
-  const closeButtonStyle = {
-    color: '#aaa',
-    float: 'right',
-    fontSize: '28px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-  };
+  if (error) {
+    return <div style={containerStyle}><p style={{ color: 'red' }}>{error}</p></div>;
+  }
 
   return (
     <div style={containerStyle}>
       <h2 style={{ textAlign: 'center' }}>My Payments</h2>
-      {error && <p style={{ color: 'red', textAlign: 'center' }}>{error}</p>}
       
       <h3>Payments Made</h3>
       <div style={cardContainerStyle}>
-        {payments.map((payment) => (
-          <div key={payment._id} style={{...cardStyle, cursor: 'pointer'}} onClick={() => setSelectedPayment(payment)}>
-            <h4>{payment.name}</h4>
-          </div>
-        ))}
+        {payments.length > 0 ? (
+          payments.map((payment) => (
+            <div key={payment._id} style={cardStyle}>
+              <h4>{payment.name}</h4>
+              <p><strong>Amount:</strong> ₹{payment.amount}</p>
+              <p><strong>Payment Code:</strong> {payment.paymentCode}</p>
+              <p><strong>Status:</strong> {payment.status || 'Completed'}</p>
+              <p><strong>Date:</strong> {new Date(payment.createdAt).toLocaleDateString()}</p>
+            </div>
+          ))
+        ) : (
+          <p>No payments made yet.</p>
+        )}
       </div>
-      {payments.length === 0 && <p style={{ textAlign: 'center' }}>No payments made.</p>}
-
-      {selectedPayment && (
-        <div style={modalStyle}>
-          <div style={modalContentStyle}>
-            <span style={closeButtonStyle} onClick={() => setSelectedPayment(null)}>&times;</span>
-            <h2>{selectedPayment.name}</h2>
-            <p><strong>Amount:</strong> ₹{selectedPayment.amount}</p>
-            <p><strong>Payment Code:</strong> {selectedPayment.paymentCode}</p>
-            <p><strong>Status:</strong> {selectedPayment.status || 'Completed'}</p>
-            <p><strong>Date:</strong> {new Date(selectedPayment.createdAt).toLocaleDateString()}</p>
-          </div>
-        </div>
-      )}
 
       <h3>Payments Created</h3>
       <div style={cardContainerStyle}>
-        {createdPayments.map((payment) => (
-          <div key={payment._id} style={cardStyle}>
-            <h4>{payment.name}</h4>
-            <p><strong>Amount:</strong> ₹{payment.amount}</p>
-            <p><strong>Payment Code:</strong> {payment.paymentCode}</p>
-            <p><strong>Payments Received:</strong> {payment.paidUsers.length}</p>
-            <p><strong>Date Created:</strong> {new Date(payment.createdAt).toLocaleDateString()}</p>
-            <button 
-              style={buttonStyle} 
-              onClick={() => navigate(`/payment-details/${payment.paymentCode}`)}
-            > 
-              View Paid Users
-            </button>
-          </div>
-        ))}
+        {createdPayments.length > 0 ? (
+          createdPayments.map((payment) => (
+            <div key={payment._id} style={cardStyle}>
+              <h4>{payment.name}</h4>
+              <p><strong>Amount:</strong> ₹{payment.amount}</p>
+              <p><strong>Payment Code:</strong> {payment.paymentCode}</p>
+              <p><strong>Payments Received:</strong> {payment.paidUsers.length}</p>
+              <p><strong>Date Created:</strong> {new Date(payment.createdAt).toLocaleDateString()}</p>
+              <button 
+                style={buttonStyle} 
+                onClick={() => navigate(`/payment-details/${payment.paymentCode}`)}
+              >
+                View Paid Users
+              </button>
+            </div>
+          ))
+        ) : (
+          <p>No payments created yet.</p>
+        )}
       </div>
-      {createdPayments.length === 0 && <p style={{ textAlign: 'center' }}>No payments created.</p>}
     </div>
   );
 };
 
 export default MyPayments;
-

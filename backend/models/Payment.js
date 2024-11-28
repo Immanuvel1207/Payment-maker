@@ -8,6 +8,7 @@ const PaymentSchema = new mongoose.Schema({
   paymentCode: { type: String, unique: true, required: true },
   paidUsers: [
     {
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
       name: String,
       rollNumber: String,
       amount: Number,

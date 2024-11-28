@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { pay, getPaymentDetails } from '../services/api';
+import { pay, getPaymentDetails, verifyPayment } from '../services/api';
 import { toast } from 'react-toastify';
 
 const Pay = () => {
@@ -18,17 +18,44 @@ const Pay = () => {
 
   const handlePayment = async () => {
     try {
-      const userData = JSON.parse(localStorage.getItem('user'));
-      await pay({ 
-        paymentCode, 
-        name: userData.name, 
-        rollNumber: userData.rollNumber 
-      });
-      toast.success('Payment Completed!');
-      handleFetchPayment();
+      const res = await pay({ paymentCode });
+      
+      const options = {
+        key: res.data.razorpayKeyId,
+        amount: res.data.amount,
+        currency: "INR",
+        name: "Payment System",
+        description: "Payment for " + paymentDetails.name,
+        order_id: res.data.razorpayOrderId,
+        handler: async function (response) {
+          try {
+            const verifyRes = await verifyPayment({
+              ...response,
+              paymentCode,
+            });
+            toast.success(verifyRes.data.message);
+            handleFetchPayment(); // Refresh payment details
+          } catch (error) {
+            console.error('Verification error:', error);
+            toast.error('Payment verification failed: ' + (error.response?.data?.error || 'Unknown error'));
+          }
+        },
+        prefill: {
+          name: JSON.parse(localStorage.getItem('user')).name,
+          email: JSON.parse(localStorage.getItem('user')).email,
+        },
+        notes: {
+          address: res.data.upiId
+        },
+        theme: {
+          color: "#3399cc"
+        }
+      };
+      const rzp1 = new window.Razorpay(options);
+      rzp1.open();
     } catch (error) {
-      console.error('Payment error:', error.response?.data);
-      toast.error('Payment failed: ' + error.response?.data?.error);
+      console.error('Payment error:', error);
+      toast.error('Payment failed: ' + (error.response?.data?.error || 'Unknown error'));
     }
   };
 
@@ -50,7 +77,7 @@ const Pay = () => {
           <p>Amount: ₹{paymentDetails.amount}</p>
           <p>UPI ID: {paymentDetails.upiId}</p>
           <p>Payments Received: {paymentDetails.paidUsers.length}</p>
-          <button onClick={handlePayment}>Pay</button>
+          <button onClick={handlePayment}>Pay with Razorpay</button>
         </div>
       )}
     </div>
