@@ -12,7 +12,8 @@ const Pay = () => {
       setPaymentDetails(res.data);
       toast.success('Payment details fetched');
     } catch (error) {
-      toast.error('Error fetching payment details');
+      console.error('Error fetching payment details:', error);
+      toast.error('Error fetching payment details: ' + (error.response?.data?.error || 'Unknown error'));
     }
   };
 
@@ -45,7 +46,7 @@ const Pay = () => {
           email: JSON.parse(localStorage.getItem('user')).email,
         },
         notes: {
-          address: res.data.upiId
+          address: paymentDetails.upiId
         },
         theme: {
           color: "#3399cc"

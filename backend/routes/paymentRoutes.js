@@ -121,11 +121,7 @@ router.get('/details/:paymentCode', async (req, res) => {
     const payment = await Payment.findOne({ paymentCode: req.params.paymentCode });
     if (!payment) return res.status(404).json({ error: 'Payment not found' });
     
-    // Check if the user is authorized to view this payment
-    if (payment.creator.toString() !== req.user.id) {
-      return res.status(403).json({ error: 'Not authorized to view this payment' });
-    }
-    
+    // Remove the authorization check so any user can fetch the payment details
     res.json(payment);
   } catch (error) {
     console.error('Error fetching payment details:', error);
